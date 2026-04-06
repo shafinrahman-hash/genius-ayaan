@@ -1,0 +1,8 @@
+# Streamlit behind Render (and similar reverse proxies). Without these, the SPA
+# shell can stay blank if WebSocket/CORS/XSRF does not match the proxy.
+# See: https://docs.streamlit.io/develop/concepts/configuration/options
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
+enableWebsocketCompression = false

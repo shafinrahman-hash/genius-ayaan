@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py model_router.py .
 COPY assets ./assets
+COPY .streamlit ./.streamlit
 
 EXPOSE 8501
 
