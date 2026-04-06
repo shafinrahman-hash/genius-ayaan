@@ -1,0 +1,58 @@
+# Genius Ayaan — Streamlit + Ollama (local LLM in Docker)
+#
+# On any server: copy the project, then:
+#   docker compose up -d --build
+#
+# The ollama-pull service waits for Ollama, then pulls OLLAMA_MODEL automatically
+# (no manual `docker compose exec ollama ollama pull`).
+#
+# Models:
+#   OLLAMA_MODEL=llama3.2          — single pull (default)
+#   OLLAMA_MODELS=llama3.2,qwen2.5-coder:7b  — pull several (for auto routing)
+# Router (web only), e.g. in .env:
+#   OLLAMA_ROUTER_MODELS={"code":"qwen2.5-coder:7b","general":"llama3.2","math":"llama3.2"}
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 30s
+      retries: 30
+      start_period: 20s
+
+  ollama-pull:
+    image: curlimages/curl:8.11.1
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-}
+    volumes:
+      - ./scripts/pull-model.sh:/pull-model.sh:ro
+    entrypoint: ["/bin/sh", "/pull-model.sh"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      OLLAMA_TEMPERATURE: ${OLLAMA_TEMPERATURE:-0.35}
+      PORT: "8501"
+      OLLAMA_ROUTER_MODELS: ${OLLAMA_ROUTER_MODELS:-}
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+
+volumes:
+  ollama_data:

@@ -1,0 +1,31 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: connect repo → New Blueprint → select this file.
+#
+# Ollama usually runs as a separate service (GPU/RAM). Set OLLAMA_BASE_URL to that
+# instance (https://... or internal URL). This web service only runs Streamlit.
+
+services:
+  - type: web
+    name: genius-ayaan
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        value: llama3.2
+      - key: OLLAMA_TEMPERATURE
+        value: "0.35"
+      - key: OLLAMA_ROUTER_MODELS
+        sync: false
+      - key: MODEL_CODE
+        sync: false
+      - key: MODEL_MATH
+        sync: false
+      - key: MODEL_CREATIVE
+        sync: false
+      - key: MODEL_REASONING
+        sync: false
+      - key: MODEL_GENERAL
+        sync: false
