@@ -217,8 +217,18 @@ def main() -> None:
         if ok:
             st.success("Ollama is reachable.")
         else:
-            st.error("Cannot reach Ollama. Start the stack and ensure the model is pulled.")
+            st.error("Cannot reach Ollama.")
+            st.caption(f"**Trying:** `{OLLAMA_BASE_URL}`")
             st.caption(status)
+            st.markdown(
+                "**Local:** run `docker compose up -d --build` in this repo (starts Ollama + web), "
+                "or run `ollama serve` and keep **OLLAMA_BASE_URL** pointing at it.\n\n"
+                "**Hosted (e.g. Render):** this image only runs Streamlit. "
+                "Set **OLLAMA_BASE_URL** in the service environment to your Ollama API base URL "
+                "(a host on the public internet or your private network that this app can reach). "
+                "`localhost` here means *this container*, not your laptop — Ollama must run elsewhere "
+                "and be reachable from the host. Pull models on that Ollama server (`ollama pull …`)."
+            )
 
         installed = list_ollama_models() if ok else []
         if installed:
@@ -277,7 +287,9 @@ def main() -> None:
 
     with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
         if not ok:
-            st.error("Ollama is not available. Check the sidebar and your Docker services.")
+            st.error(
+                "Ollama is not available. Fix **OLLAMA_BASE_URL** / your stack (see sidebar), then try again."
+            )
             return
         reply = ""
         model = DEFAULT_MODEL
