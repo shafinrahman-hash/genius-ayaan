@@ -17,7 +17,9 @@ BASE_DIR = Path(__file__).resolve().parent
 AVATAR_PATH = BASE_DIR / "assets" / "ayaan.png"
 ASSISTANT_AVATAR = str(AVATAR_PATH) if AVATAR_PATH.is_file() else "🧭"
 
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+_OLLAMA_BASE_URL_ENV = os.environ.get("OLLAMA_BASE_URL", "").strip()
+OLLAMA_BASE_URL_EXPLICIT = bool(_OLLAMA_BASE_URL_ENV)
+OLLAMA_BASE_URL = (_OLLAMA_BASE_URL_ENV or "http://localhost:11434").rstrip("/")
 DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 try:
     TEMPERATURE = float(os.environ.get("OLLAMA_TEMPERATURE", "0.35"))
@@ -85,6 +87,15 @@ def ollama_chat(
     if not content:
         raise RuntimeError("Unexpected Ollama response: missing message content")
     return content
+
+
+def _running_on_render() -> bool:
+    return os.environ.get("RENDER", "").lower() in ("true", "1", "yes")
+
+
+def _ollama_url_is_loopback() -> bool:
+    u = OLLAMA_BASE_URL.lower()
+    return "localhost" in u or "127.0.0.1" in u
 
 
 def check_ollama() -> tuple[bool, str]:
@@ -218,6 +229,16 @@ def main() -> None:
             st.success("Ollama is reachable.")
         else:
             st.error("Cannot reach Ollama.")
+            if _running_on_render() and (
+                not OLLAMA_BASE_URL_EXPLICIT or _ollama_url_is_loopback()
+            ):
+                st.warning(
+                    "**Render:** `OLLAMA_BASE_URL` is missing or still points at localhost inside "
+                    "this service. Open **Render Dashboard → your web service → Environment**, add "
+                    "**OLLAMA_BASE_URL** = the base URL of an Ollama server this app can reach over "
+                    "the network (for example `https://ollama.example.com` or `http://your-vps-ip:11434`). "
+                    "It cannot be your laptop’s localhost. After saving, **redeploy** or restart the service."
+                )
             st.caption(f"**Trying:** `{OLLAMA_BASE_URL}`")
             st.caption(status)
             st.markdown(
