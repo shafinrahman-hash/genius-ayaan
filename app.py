@@ -18,13 +18,27 @@ AVATAR_PATH = BASE_DIR / "assets" / "ayaan.png"
 ASSISTANT_AVATAR = str(AVATAR_PATH) if AVATAR_PATH.is_file() else "🧭"
 
 _OLLAMA_BASE_URL_ENV = os.environ.get("OLLAMA_BASE_URL", "").strip()
-OLLAMA_BASE_URL_EXPLICIT = bool(_OLLAMA_BASE_URL_ENV)
-OLLAMA_BASE_URL = (_OLLAMA_BASE_URL_ENV or "http://localhost:11434").rstrip("/")
+# Optional: if you cannot set `OLLAMA_BASE_URL` on the host (e.g. Render dashboard), set your
+# public Ollama API base here and redeploy. Env still wins when set. Public repos expose this string.
+OLLAMA_BASE_URL_IN_CODE = ""
+
+_ollama_raw = _OLLAMA_BASE_URL_ENV or OLLAMA_BASE_URL_IN_CODE.strip()
+OLLAMA_BASE_URL_EXPLICIT = bool(_ollama_raw)
+OLLAMA_BASE_URL = (_ollama_raw or "http://localhost:11434").rstrip("/")
 DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 try:
     TEMPERATURE = float(os.environ.get("OLLAMA_TEMPERATURE", "0.35"))
 except ValueError:
     TEMPERATURE = 0.35
+
+# On Render, check Logs after deploy — confirms env vs in-code fallback vs default localhost.
+if os.environ.get("RENDER", "").lower() in ("true", "1", "yes"):
+    print(
+        "[genius-ayaan] OLLAMA_BASE_URL env="
+        f"{_OLLAMA_BASE_URL_ENV!r} in_code="
+        f"{OLLAMA_BASE_URL_IN_CODE!r} → effective {OLLAMA_BASE_URL!r}",
+        flush=True,
+    )
 
 
 def _ollama_options(temperature: float) -> dict:
@@ -242,8 +256,14 @@ def main() -> None:
                 st.warning(
                     "**Render:** Dashboard → this **Web Service** → **Environment** → add "
                     "**`OLLAMA_BASE_URL`** = your Ollama base URL (e.g. `http://vps-ip:11434` or "
-                    "`https://ollama.example.com`). Save, then **redeploy** or restart. "
+                    "`https://ollama.example.com`). Save, then **Manual Deploy** (or restart). "
                     "`localhost` here is the container, not your laptop."
+                )
+                st.caption(
+                    "**Still empty after adding it?** Open **Logs** and search for "
+                    "`[genius-ayaan] OLLAMA_BASE_URL from env:` — if it says `(empty)`, "
+                    "the variable is not on *this* service (wrong service, typo in the name, or deploy "
+                    "did not run after Save). Name must be exactly **`OLLAMA_BASE_URL`**."
                 )
             st.markdown(
                 "**Local:** `docker compose up -d --build` or `ollama serve` on your machine. "
