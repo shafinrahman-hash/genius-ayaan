@@ -229,26 +229,25 @@ def main() -> None:
             st.success("Ollama is reachable.")
         else:
             st.error("Cannot reach Ollama.")
+            if not OLLAMA_BASE_URL_EXPLICIT:
+                st.caption(
+                    "**`OLLAMA_BASE_URL` is not set** in the environment — using default "
+                    "`http://localhost:11434` (only works when Ollama runs on the same machine/process)."
+                )
+            st.caption(f"**Trying:** `{OLLAMA_BASE_URL}`")
+            st.caption(status)
             if _running_on_render() and (
                 not OLLAMA_BASE_URL_EXPLICIT or _ollama_url_is_loopback()
             ):
                 st.warning(
-                    "**Render:** `OLLAMA_BASE_URL` is missing or still points at localhost inside "
-                    "this service. Open **Render Dashboard → your web service → Environment**, add "
-                    "**OLLAMA_BASE_URL** = the base URL of an Ollama server this app can reach over "
-                    "the network (for example `https://ollama.example.com` or `http://your-vps-ip:11434`). "
-                    "It cannot be your laptop’s localhost. After saving, **redeploy** or restart the service."
+                    "**Render:** Dashboard → this **Web Service** → **Environment** → add "
+                    "**`OLLAMA_BASE_URL`** = your Ollama base URL (e.g. `http://vps-ip:11434` or "
+                    "`https://ollama.example.com`). Save, then **redeploy** or restart. "
+                    "`localhost` here is the container, not your laptop."
                 )
-            st.caption(f"**Trying:** `{OLLAMA_BASE_URL}`")
-            st.caption(status)
             st.markdown(
-                "**Local:** run `docker compose up -d --build` in this repo (starts Ollama + web), "
-                "or run `ollama serve` and keep **OLLAMA_BASE_URL** pointing at it.\n\n"
-                "**Hosted (e.g. Render):** this image only runs Streamlit. "
-                "Set **OLLAMA_BASE_URL** in the service environment to your Ollama API base URL "
-                "(a host on the public internet or your private network that this app can reach). "
-                "`localhost` here means *this container*, not your laptop — Ollama must run elsewhere "
-                "and be reachable from the host. Pull models on that Ollama server (`ollama pull …`)."
+                "**Local:** `docker compose up -d --build` or `ollama serve` on your machine. "
+                "**Hosted:** run Ollama on a reachable host and `ollama pull` your model there."
             )
 
         installed = list_ollama_models() if ok else []
